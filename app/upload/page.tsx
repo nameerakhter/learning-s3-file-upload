@@ -3,6 +3,21 @@ import { useState } from "react";
 import { NextResponse } from "next/server";
 import { getUrl } from "../create/action";
 
+type SignedUrlResponse = {
+  success?: { url: string };
+  failure?: string;
+};
+
+const computeSHA256 = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return hashHex;
+};
+
 export default function Upload() {
   const [file, setFile] = useState<File | undefined>(undefined);
   const [fileUrl, setFileUrl] = useState<string | undefined>(undefined);
@@ -23,7 +38,12 @@ export default function Upload() {
     e.preventDefault();
     try {
       if (file) {
-        const getSignedUrlResult = await getUrl();
+        const checksum = await computeSHA256(file);
+        const getSignedUrlResult = (await getUrl(
+          file.type,
+          file.size,
+          checksum,
+        )) as SignedUrlResponse;
         console.log(getSignedUrlResult);
         if (getSignedUrlResult.failure !== undefined) {
           return NextResponse.json(
