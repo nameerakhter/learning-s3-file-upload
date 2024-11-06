@@ -5,6 +5,9 @@ import { authOptions } from "../api/auth/[...nextauth]/authOptions";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
+const generateFilename = (bytes = 32) =>
+  crypto.randomBytes(bytes).toString("hex");
 
 const s3 = new S3Client({
   region: process.env.AWS_BUCKET_REGION,
@@ -55,7 +58,7 @@ export async function getUrl(type: string, size: number, checksum: string) {
   }
   const putObjectCommand = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME!,
-    Key: "test-file",
+    Key: generateFilename(),
     ContentType: type,
     ContentLength: size,
     ChecksumSHA256: checksum,
